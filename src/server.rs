@@ -14,7 +14,7 @@ enum Request {
     Convert(String),
     Version,
     Host,
-    Completion(String),
+    Complete(String),
 }
 
 impl FromStr for Request {
@@ -53,11 +53,11 @@ impl FromStr for Request {
             };
         }
 
-        // 4: completion
+        // 4: complete
         {
             let re = Regex::new(r"\A4(.+) \z")?;
             if let Some(cap) = re.captures(s) {
-                return Ok(Self::Completion(cap[1].to_string()));
+                return Ok(Self::Complete(cap[1].to_string()));
             }
         }
 
@@ -92,39 +92,25 @@ fn handler(mut stream: TcpStream, context: ServerContext) -> Result<()> {
             debug!("Connection closed.");
             return Ok(());
         }
+
+        // コマンドを実行
         let s = decode_request(&buffer[..nbytes])?;
         debug!("request: '{}'", s);
         let req = Request::from_str(&s)?;
         debug!("parsed request: {:?}", req);
-        match req {
+        let res = match req {
             Request::Disconnect => {
+                debug!("Connection closed.");
                 return Ok(());
             }
-            Request::Convert(s) => {
-                let res = convert(&s);
-                debug!("response: {}", res);
-                let res = encode_response(&res)?;
-                stream.write_all(&res)?;
-            }
-            Request::Version => {
-                let res = skkserv_version();
-                debug!("response: {}", res);
-                let res = encode_response(&res)?;
-                stream.write_all(&res)?;
-            }
-            Request::Host => {
-                let res = skkserv_host(&context.host);
-                debug!("response: {}", res);
-                let res = encode_response(&res)?;
-                stream.write_all(&res)?;
-            }
-            Request::Completion(s) => {
-                let res = complete(&s);
-                debug!("response: {}", res);
-                let res = encode_response(&res)?;
-                stream.write_all(&res)?;
-            }
-        }
+            Request::Convert(s) => convert(&s),
+            Request::Version => skkserv_version(),
+            Request::Host => skkserv_host(&context.host),
+            Request::Complete(s) => complete(&s),
+        };
+        debug!("response: {}", res);
+        let res = encode_response(&res)?;
+        stream.write_all(&res)?;
     }
 }
 
