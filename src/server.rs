@@ -142,10 +142,12 @@ fn skkserv_host(address: &str) -> String {
 }
 
 fn convert(s: &str) -> String {
+    // TODO: 実装
     "4\n".to_string()
 }
 
 fn complete(_req: &str) -> String {
+    // 未対応
     let res = "4\n".to_string();
     return res;
 }
