@@ -1,4 +1,6 @@
 use anyhow::{anyhow, Error, Result};
+use encoding::all::EUC_JP;
+use encoding::{DecoderTrap, EncoderTrap, Encoding};
 use log::{debug, error};
 use regex::Regex;
 use std::io::{Read, Write};
@@ -75,17 +77,66 @@ fn handler(mut stream: TcpStream) -> Result<()> {
             debug!("Connection closed.");
             return Ok(());
         }
-        let s = str::from_utf8(&buffer[..nbytes])?;
+        let s = decode_request(&buffer[..nbytes])?;
         debug!("request: '{}'", s);
-        let req = Request::from_str(s)?;
+        let req = Request::from_str(&s)?;
         debug!("parsed request: {:?}", req);
-        // TODO
         match req {
-            Request::Disconnect => {}
-            Request::Convert(s) => {}
-            Request::Version => {}
-            Request::Completion(s) => {}
+            Request::Disconnect => {
+                return Ok(());
+            }
+            Request::Convert(s) => {
+                let res = convert(&s);
+                debug!("response: {}", res);
+                let res = encode_response(&res)?;
+                stream.write_all(&res)?;
+            }
+            Request::Version => {
+                let res = skkserv_version();
+                debug!("response: {}", res);
+                let res = encode_response(&res)?;
+                stream.write_all(&res)?;
+            }
+            Request::Completion(s) => {
+                let res = complete(&s);
+                debug!("response: {}", res);
+                let res = encode_response(&res)?;
+                stream.write_all(&res)?;
+            }
         }
-        // stream.write_all("".as_bytes())?;
+    }
+}
+
+fn skkserv_version() -> String {
+    format!(
+        "{}.{}.{}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION_MAJOR"),
+        env!("CARGO_PKG_VERSION_MINOR"),
+    )
+}
+
+fn convert(s: &str) -> String {
+    "4\n".to_string()
+}
+
+fn complete(_req: &str) -> String {
+    let res = "4\n".to_string();
+    return res;
+}
+
+fn decode_request(req: &[u8]) -> Result<String> {
+    if let Ok(s) = EUC_JP.decode(req, DecoderTrap::Strict) {
+        Ok(s)
+    } else {
+        Err(anyhow!("dedcode failed"))
+    }
+}
+
+fn encode_response(res: &str) -> Result<Vec<u8>> {
+    if let Ok(s) = EUC_JP.encode(&res, EncoderTrap::Strict) {
+        Ok(s)
+    } else {
+        Err(anyhow!("encode failed"))
     }
 }
