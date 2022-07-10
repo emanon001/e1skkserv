@@ -13,6 +13,7 @@ enum Request {
     Disconnect,
     Convert(String),
     Version,
+    Host,
     Completion(String),
 }
 
@@ -23,14 +24,14 @@ impl FromStr for Request {
             return Err(anyhow!("invalid request"));
         }
 
-        // disconnect
+        // 0: disconnect
         {
             if s == "0" {
                 return Ok(Self::Disconnect);
             };
         }
 
-        // convert
+        // 1: convert
         {
             let re = Regex::new(r"\A1(.+) \z")?;
             if let Some(cap) = re.captures(s) {
@@ -38,16 +39,23 @@ impl FromStr for Request {
             }
         }
 
-        // version
+        // 2: version
         {
             if s == "2" {
                 return Ok(Self::Version);
             };
         }
 
-        // completion
+        // 3: host
         {
-            let re = Regex::new(r"\A3(.+) \z")?;
+            if s == "3" {
+                return Ok(Self::Host);
+            };
+        }
+
+        // 4: completion
+        {
+            let re = Regex::new(r"\A4(.+) \z")?;
             if let Some(cap) = re.captures(s) {
                 return Ok(Self::Completion(cap[1].to_string()));
             }
@@ -57,18 +65,25 @@ impl FromStr for Request {
     }
 }
 
-pub fn serve(address: &str) -> Result<()> {
-    let listener = TcpListener::bind(address)?;
-    debug!("bind {}", address);
+pub fn serve(host: &str) -> Result<()> {
+    let listener = TcpListener::bind(host)?;
+    debug!("bind {}", host);
     loop {
         let (stream, _) = listener.accept()?;
+        let context = ServerContext {
+            host: host.to_string(),
+        };
         thread::spawn(move || {
-            handler(stream).unwrap_or_else(|e| error!("{:?}", e));
+            handler(stream, context).unwrap_or_else(|e| error!("{:?}", e));
         });
     }
 }
 
-fn handler(mut stream: TcpStream) -> Result<()> {
+struct ServerContext {
+    host: String,
+}
+
+fn handler(mut stream: TcpStream, context: ServerContext) -> Result<()> {
     debug!("Handling data from {}", stream.peer_addr()?);
     let mut buffer = [0u8; 1024];
     loop {
@@ -97,6 +112,12 @@ fn handler(mut stream: TcpStream) -> Result<()> {
                 let res = encode_response(&res)?;
                 stream.write_all(&res)?;
             }
+            Request::Host => {
+                let res = skkserv_host(&context.host);
+                debug!("response: {}", res);
+                let res = encode_response(&res)?;
+                stream.write_all(&res)?;
+            }
             Request::Completion(s) => {
                 let res = complete(&s);
                 debug!("response: {}", res);
@@ -114,6 +135,10 @@ fn skkserv_version() -> String {
         env!("CARGO_PKG_VERSION_MAJOR"),
         env!("CARGO_PKG_VERSION_MINOR"),
     )
+}
+
+fn skkserv_host(address: &str) -> String {
+    format!("{}", address)
 }
 
 fn convert(s: &str) -> String {
