@@ -27,7 +27,7 @@ pub fn serve(config: ServerConfig) -> Result<()> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Request {
     Disconnect,
     Convert(String),
@@ -128,5 +128,61 @@ fn encode_response(res: &str) -> Result<Vec<u8>> {
         Ok(s)
     } else {
         Err(anyhow!("encode failed"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod request {
+        use super::*;
+
+        #[test]
+        fn from_str_disconnect() {
+            let disconnect_req = Request::from_str("0");
+            assert!(disconnect_req.is_ok());
+            assert_eq!(disconnect_req.unwrap(), Request::Disconnect);
+
+            assert!(Request::from_str("0 ").is_err());
+        }
+
+        #[test]
+        fn from_str_convert() {
+            let convert_req = Request::from_str("1abc ");
+            assert!(convert_req.is_ok());
+            assert_eq!(convert_req.unwrap(), Request::Convert("abc".to_string()));
+
+            assert!(Request::from_str("1abc").is_err());
+            assert!(Request::from_str("1 ").is_err());
+        }
+
+        #[test]
+        fn from_str_version() {
+            let version_req = Request::from_str("2");
+            assert!(version_req.is_ok());
+            assert_eq!(version_req.unwrap(), Request::Version);
+
+            assert!(Request::from_str("2 ").is_err());
+        }
+
+        #[test]
+        fn from_str_host() {
+            let host_req = Request::from_str("3");
+            assert!(host_req.is_ok());
+            assert_eq!(host_req.unwrap(), Request::Host);
+
+            assert!(Request::from_str("3 ").is_err());
+        }
+
+        #[test]
+        fn from_str_complete() {
+            let complete_req = Request::from_str("4abc ");
+            assert!(complete_req.is_ok());
+            assert_eq!(complete_req.unwrap(), Request::Complete("abc".to_string()));
+
+            assert!(Request::from_str("4abc").is_err());
+            assert!(Request::from_str("4 ").is_err());
+        }
     }
 }
