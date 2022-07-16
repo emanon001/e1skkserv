@@ -140,18 +140,17 @@ mod tests {
 
         #[test]
         fn from_str_disconnect() {
-            let disconnect_req = Request::from_str("0");
-            assert!(disconnect_req.is_ok());
-            assert_eq!(disconnect_req.unwrap(), Request::Disconnect);
+            assert!(matches!(Request::from_str("0"), Ok(Request::Disconnect)));
 
             assert!(Request::from_str("0 ").is_err());
         }
 
         #[test]
         fn from_str_convert() {
-            let convert_req = Request::from_str("1abc ");
-            assert!(convert_req.is_ok());
-            assert_eq!(convert_req.unwrap(), Request::Convert("abc".to_string()));
+            assert!(matches!(
+                Request::from_str("1abc "),
+                Ok(Request::Convert(s)) if s == "abc"
+            ));
 
             assert!(Request::from_str("1abc").is_err());
             assert!(Request::from_str("1 ").is_err());
@@ -159,27 +158,24 @@ mod tests {
 
         #[test]
         fn from_str_version() {
-            let version_req = Request::from_str("2");
-            assert!(version_req.is_ok());
-            assert_eq!(version_req.unwrap(), Request::Version);
+            assert!(matches!(Request::from_str("2"), Ok(Request::Version)));
 
             assert!(Request::from_str("2 ").is_err());
         }
 
         #[test]
         fn from_str_host() {
-            let host_req = Request::from_str("3");
-            assert!(host_req.is_ok());
-            assert_eq!(host_req.unwrap(), Request::Host);
+            assert!(matches!(Request::from_str("3"), Ok(Request::Host)));
 
             assert!(Request::from_str("3 ").is_err());
         }
 
         #[test]
         fn from_str_complete() {
-            let complete_req = Request::from_str("4abc ");
-            assert!(complete_req.is_ok());
-            assert_eq!(complete_req.unwrap(), Request::Complete("abc".to_string()));
+            assert!(matches!(
+                Request::from_str("4abc "),
+                Ok(Request::Complete(s)) if s == "abc"
+            ));
 
             assert!(Request::from_str("4abc").is_err());
             assert!(Request::from_str("4 ").is_err());
