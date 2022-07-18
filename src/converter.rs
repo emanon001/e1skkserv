@@ -24,3 +24,18 @@ impl SkkConverter for Emanon001Converter {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skk_converter() {
+        let converter = Emanon001Converter::new();
+        assert_eq!(
+            converter.convert("ぼく"),
+            Some(vec!["emanon001".to_string()])
+        );
+        assert_eq!(converter.convert("わたし"), None);
+    }
+}
