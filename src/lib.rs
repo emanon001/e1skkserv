@@ -1,3 +1,3 @@
-mod command;
-mod converter;
+mod commands;
+mod converters;
 pub mod server;

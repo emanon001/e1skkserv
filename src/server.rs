@@ -1,4 +1,4 @@
-use crate::command;
+use crate::commands;
 use anyhow::{anyhow, Error, Result};
 use encoding::all::EUC_JP;
 use encoding::{DecoderTrap, EncoderTrap, Encoding};
@@ -104,10 +104,10 @@ fn handler(mut stream: TcpStream, config: ServerConfig) -> Result<()> {
                 debug!("Connection closed.");
                 return Ok(());
             }
-            Request::Convert(s) => command::convert(&s),
-            Request::Version => command::skkserv_version(),
-            Request::Host => command::skkserv_host(&config.host),
-            Request::Complete(s) => command::complete(&s),
+            Request::Convert(s) => commands::convert(&s),
+            Request::Version => commands::skkserv_version(),
+            Request::Host => commands::skkserv_host(&config.host),
+            Request::Complete(s) => commands::complete(&s),
         };
         debug!("response: {}", res);
         let res = encode_response(&res)?;
