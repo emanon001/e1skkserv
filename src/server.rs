@@ -116,19 +116,15 @@ fn handler(mut stream: TcpStream, config: ServerConfig) -> Result<()> {
 }
 
 fn decode_request(req: &[u8]) -> Result<String> {
-    if let Ok(s) = EUC_JP.decode(req, DecoderTrap::Strict) {
-        Ok(s)
-    } else {
-        Err(anyhow!("dedcode failed"))
-    }
+    EUC_JP
+        .decode(req, DecoderTrap::Strict)
+        .map_err(|e| anyhow!(e))
 }
 
 fn encode_response(res: &str) -> Result<Vec<u8>> {
-    if let Ok(s) = EUC_JP.encode(&res, EncoderTrap::Strict) {
-        Ok(s)
-    } else {
-        Err(anyhow!("encode failed"))
-    }
+    EUC_JP
+        .encode(&res, EncoderTrap::Strict)
+        .map_err(|e| anyhow!(e))
 }
 
 #[cfg(test)]
